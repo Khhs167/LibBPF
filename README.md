@@ -1,5 +1,5 @@
 # LibBPF
-A very basic single-header format for packing resources into a single file.  
+A very basic single-header C/C++ library for packing resources into a single file.  
 The library is not the most optimized but it is works for it's purpose.
 
 ## Usage
