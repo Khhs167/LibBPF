@@ -41,32 +41,32 @@ SOFTWARE.
 #include <string.h>
 #include <stdbool.h>
 
-typedef struct bpf_header_t{
-    uint8_t bpf_file_header[4] = BPF_HEADER_STRING;
+typedef struct{
+    uint8_t bpf_file_header[4];
     uint8_t bpf_file_version;
-    uint8_t checksum = BPF_HEADER_CHECKSUM_CORRECT; // For basic encryption. This should always result to the value 171
+    uint8_t checksum; // For basic encryption. This should always result to the value 171
     uint32_t file_blocks;
     uint32_t data_size;
-};
+} bpf_header_t;
 
-typedef struct bpf_block_t
+typedef struct
 {
     uint32_t file_name_hash;
     uint32_t pointer_location;
     uint32_t pointer_size;
-};
+} bpf_block_t;
 
-typedef struct bpf_file_t
+typedef struct
 {
     bpf_header_t header;
     bpf_block_t* blocks;
     uint8_t* data;
-};
+} bpf_file_t;
 
-typedef struct bpf_file_data_t{
+typedef struct {
     char* data;
     uint32_t size;
-};
+} bpf_file_data_t;
 
 //BPF_API bpf_file_data_t bpf_serialize_file(bpf_file_t file);
 BPF_API bpf_file_t bpf_deserialize_memory(char* data);
@@ -88,7 +88,7 @@ BPF_API bpf_file_data_t bpf_read(bpf_file_t file, const char* name){
         bpf_block_t block = file.blocks[i];
         if(block.file_name_hash == hash){
             //data_ptr += block.pointer_location;
-            bpf_file_data_t data = bpf_file_data_t();
+            bpf_file_data_t data = {};
             data.size = block.pointer_size;
             data.data = (char*)malloc(block.pointer_size);
             for(int j = block.pointer_location; j < block.pointer_location + block.pointer_size; j++){
@@ -99,12 +99,14 @@ BPF_API bpf_file_data_t bpf_read(bpf_file_t file, const char* name){
             return data;
         }
     }
-
-    return {};
+    bpf_file_data_t data_blank = {};
+    return data_blank;
 }
 
 BPF_API void bpf_free_file(bpf_file_t file){
-    free(file.blo.data)
+    free(file.blocks);
+    free(file.data);
+}
 
 BPF_API int bpf_verify_file(bpf_file_t file){
     if(file.header.checksum != BPF_HEADER_CHECKSUM_CORRECT)
@@ -118,14 +120,14 @@ BPF_API void bpf_free_file_data(bpf_file_data_t file){
 
 BPF_API bpf_file_t bpf_deserialize_memory(char* data){
     char* p = data;
-    bpf_file_t file = bpf_file_t();
+    bpf_file_t file = {};
 
     memcpy(&file.header, p, sizeof(bpf_header_t));
     p += sizeof(bpf_header_t);
 
     file.blocks = (bpf_block_t*)malloc(sizeof(bpf_block_t) * file.header.file_blocks);
     for(int i = 0; i < file.header.file_blocks; i++){
-        bpf_block_t block = bpf_block_t();
+        bpf_block_t block = {};
         memcpy(&block, p, sizeof(block));
         p += sizeof(block);
         file.blocks[i] = block;
@@ -137,7 +139,7 @@ BPF_API bpf_file_t bpf_deserialize_memory(char* data){
 }
 
 BPF_API bpf_file_data_t bpf_serialize_file(bpf_file_t file){
-    bpf_file_data_t data = bpf_file_data_t();
+    bpf_file_data_t data = {};
     data.size = sizeof(bpf_header_t);
     data.size += sizeof(bpf_block_t) * file.header.file_blocks;
     data.size += file.header.data_size;
@@ -164,10 +166,15 @@ BPF_API bpf_file_t bpf_generate_file(char** file_names, unsigned int file_c, uns
     }
 
 
-    bpf_file_t file = bpf_file_t();
-    bpf_header_t header = bpf_header_t();
+    bpf_file_t file = {};
+    bpf_header_t header = {};
 
+    header.bpf_file_header[0] = 'b';
+    header.bpf_file_header[1] = 'p';
+    header.bpf_file_header[2] = 'f';
+    header.bpf_file_header[3] = 0;
     header.bpf_file_version =  0x10;
+    header.checksum = BPF_HEADER_CHECKSUM_CORRECT;
     header.file_blocks = file_c;
     header.data_size = data_size;
 
@@ -178,7 +185,7 @@ BPF_API bpf_file_t bpf_generate_file(char** file_names, unsigned int file_c, uns
     unsigned char* data = (unsigned char*)malloc(data_size);
     unsigned int data_pointer = 0;
     for(unsigned int i = 0; i < file_c; i++){
-        bpf_block_t block = bpf_block_t();
+        bpf_block_t block = {};
         block.file_name_hash = bpf_file_name_hash(file_names[i]);
         block.pointer_location = data_pointer;
         block.pointer_size = file_sizes[i];
