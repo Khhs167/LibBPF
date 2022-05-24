@@ -12,3 +12,6 @@ char* data = fetched.data; // Fetch the data
 unsigned int size = fetched.size; // Fetch the size of the data
 ```
 This isnt the best explanation in the world, but i hope it helps. There is also code for making and serializing files.  
+
+If you want better explanations, just create an issue asking for help, or join our [discord](https://discord.gg/wGuAHmyzBh)(the openability discord)!  
+There are also examples if needed of course just check the `examples` folder!
